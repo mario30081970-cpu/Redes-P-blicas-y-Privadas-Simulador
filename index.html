@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#071320">
+<title>Simulador de Redes · Material N°21</title>
+<style>
+  :root{
+    --bg:#071320;
+    --panel:#0d2033;
+    --card:#15324c;
+    --card2:#1b3d5c;
+    --line:#23486a;
+    --accent:#38bdf8;
+    --accent2:#f5a524;
+    --ok:#22c55e;
+    --err:#ef4444;
+    --txt:#e8f2fb;
+    --muted:#93a9c0;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:linear-gradient(180deg,#071320 0%,#0a1a2b 100%);
+    color:var(--txt);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    font-size:16px;
+    line-height:1.5;
+    min-height:100vh;
+    padding-bottom:40px;
+  }
+  .wrap{max-width:760px;margin:0 auto;padding:12px;}
+
+  /* ---------- BARRA SUPERIOR ---------- */
+  .topbar{
+    position:sticky;top:0;z-index:50;
+    background:rgba(7,19,32,.96);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line);
+    padding:10px 12px 8px;
+  }
+  .topbar h1{
+    margin:0;font-size:.95rem;letter-spacing:.3px;
+    color:var(--accent);font-weight:700;text-transform:uppercase;
+  }
+  .topbar p{margin:2px 0 8px;font-size:.72rem;color:var(--muted);}
+  .progreso{display:flex;gap:6px;}
+  .progreso .chip{
+    flex:1;text-align:center;font-size:.68rem;padding:5px 2px;
+    border-radius:8px;background:#0f2438;border:1px solid var(--line);
+    color:var(--muted);font-weight:700;transition:.25s;
+  }
+  .progreso .chip.done{
+    background:rgba(34,197,94,.15);border-color:var(--ok);color:#7ee2a8;
+  }
+
+  /* ---------- PANTALLAS ---------- */
+  .pantalla{display:none;animation:fade .3s ease;}
+  .pantalla.activa{display:block;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+  .card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:16px;
+    margin-bottom:14px;
+    box-shadow:0 4px 18px rgba(0,0,0,.35);
+  }
+  .card h2{
+    margin:0 0 6px;font-size:1.15rem;color:#fff;line-height:1.25;
+  }
+  .card h2 .num{
+    display:inline-block;background:var(--accent);color:#04121f;
+    border-radius:8px;padding:1px 9px;margin-right:8px;font-size:.9rem;
+  }
+  .card h3{margin:16px 0 8px;font-size:1rem;color:var(--accent2);}
+  .sub{color:var(--muted);font-size:.86rem;margin:0 0 12px;}
+
+  /* ---------- FORMULARIOS ---------- */
+  label{display:block;font-size:.82rem;font-weight:700;color:var(--accent);
+    margin:12px 0 6px;text-transform:uppercase;letter-spacing:.4px;}
+  input[type=text],textarea{
+    width:100%;padding:14px;border-radius:12px;
+    background:#0a1a2b;border:1px solid var(--line);
+    color:var(--txt);font-size:16px;font-family:inherit;
+    outline:none;transition:.2s;
+  }
+  input[type=text]:focus,textarea:focus{
+    border-color:var(--accent);box-shadow:0 0 0 3px rgba(56,189,248,.18);
+  }
+  textarea{min-height:130px;resize:vertical;line-height:1.5;}
+
+  /* ---------- BOTONES ---------- */
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    min-height:52px;padding:12px 16px;border-radius:12px;border:1px solid var(--line);
+    background:var(--card);color:var(--txt);
+    font-size:.95rem;font-weight:700;font-family:inherit;
+    cursor:pointer;transition:.15s;width:100%;
+  }
+  .btn:active{transform:scale(.97);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-primary{background:linear-gradient(135deg,#0284c7,#38bdf8);color:#04121f;border:none;}
+  .btn-ok{background:linear-gradient(135deg,#15803d,#22c55e);color:#04121f;border:none;}
+  .btn-amber{background:linear-gradient(135deg,#b45309,#f5a524);color:#1a0e00;border:none;}
+  .btn-ghost{background:transparent;}
+  .btn-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+  .btn-row .btn{flex:1 1 0;min-width:120px;}
+
+  /* ---------- MÓDULO 1 · ITEMS ---------- */
+  .item{
+    background:var(--card);border:1px solid var(--line);
+    border-radius:14px;padding:12px;margin-bottom:10px;transition:.25s;
+  }
+  .item.ok{border-color:var(--ok);background:rgba(34,197,94,.10);}
+  .item.shake{animation:shake .4s;}
+  @keyframes shake{
+    0%,100%{transform:translateX(0);}
+    20%{transform:translateX(-7px);}
+    40%{transform:translateX(7px);}
+    60%{transform:translateX(-5px);}
+    80%{transform:translateX(5px);}
+  }
+  .item-txt{font-size:.94rem;font-weight:600;margin-bottom:2px;word-break:break-word;}
+  .item-tipo{font-size:.7rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;}
+  .item .btn-row{margin-top:0;}
+  .item .btn{min-height:48px;font-size:.85rem;}
+  .feedback{font-size:.8rem;margin-top:8px;line-height:1.4;display:none;}
+  .feedback.show{display:block;}
+  .ok-txt{color:#7ee2a8;}
+  .err-txt{color:#fca5a5;}
+
+  /* ---------- CONTADOR PALABRAS ---------- */
+  .contador{
+    margin-top:8px;font-size:.8rem;font-weight:700;
+    padding:8px 12px;border-radius:10px;text-align:center;
+    background:#0a1a2b;border:1px dashed var(--line);color:var(--muted);
+  }
+  .contador.ok{background:rgba(34,197,94,.12);border-color:var(--ok);color:#7ee2a8;border-style:solid;}
+  .contador.bad{background:rgba(239,68,68,.10);border-color:var(--err);color:#fca5a5;}
+
+  /* ---------- ESTADO DE EJERCICIO ---------- */
+  .estado{
+    margin-top:12px;padding:10px 12px;border-radius:10px;font-size:.85rem;
+    font-weight:700;text-align:center;background:#0a1a2b;border:1px solid var(--line);color:var(--muted);
+  }
+  .estado.ok{background:rgba(34,197,94,.14);border-color:var(--ok);color:#7ee2a8;}
+
+  /* ---------- TÚNEL VPN ---------- */
+  .tunel{
+    position:relative;height:64px;margin:14px 0;border-radius:32px;
+    background:#0a1a2b;border:2px solid var(--line);overflow:hidden;
+    display:flex;align-items:center;padding:0 8px;
+  }
+  .tunel.activo{border-color:var(--ok);box-shadow:0 0 20px rgba(34,197,94,.3) inset;}
+  .paquete{
+    font-size:1.5rem;position:absolute;left:8px;transition:left 1.6s ease-in-out;
+  }
+  .tunel.activo .paquete{left:calc(100% - 46px);}
+  .tunel-msg{
+    position:absolute;width:100%;text-align:center;font-size:.72rem;
+    color:var(--muted);bottom:4px;letter-spacing:.5px;
+  }
+
+  /* ---------- CIERRE ---------- */
+  .checklist{list-style:none;padding:0;margin:10px 0;}
+  .checklist li{
+    padding:10px 12px;border-radius:10px;margin-bottom:8px;font-size:.85rem;
+    background:#0a1a2b;border:1px solid var(--line);color:var(--muted);
+    display:flex;align-items:center;gap:8px;
+  }
+  .checklist li.ok{color:#7ee2a8;border-color:var(--ok);background:rgba(34,197,94,.10);}
+
+  .aviso{
+    background:rgba(245,165,36,.12);border:1px solid var(--accent2);
+    color:#ffd89b;border-radius:12px;padding:12px;font-size:.82rem;margin-bottom:12px;
+  }
+
+  .oculto{display:none !important;}
+  .pie{text-align:center;font-size:.7rem;color:var(--muted);padding:16px 0 4px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>Redes Públicas y Privadas · Simulador</h1>
+  <p>Escuela Técnica · Materia: Redes · 6to Año · Material N°21</p>
+  <div class="progreso">
+    <div class="chip" id="chip1">Módulo 1</div>
+    <div class="chip" id="chip2">Módulo 2</div>
+    <div class="chip" id="chip3">Módulo 3</div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- ================= PANTALLA 1: IDENTIFICACIÓN ================= -->
+  <section class="pantalla activa" id="p-inicio">
+    <div class="card">
+      <h2>🔐 Identificación del Alumno</h2>
+      <p class="sub">Completa tus datos para habilitar el informe final. Todos los campos son obligatorios.</p>
+
+      <label for="inNombre">Nombre y Apellido del Alumno</label>
+      <input type="text" id="inNombre" placeholder="Ej: María González" autocomplete="name">
+
+      <label for="inCurso">Curso / División</label>
+      <input type="text" id="inCurso" placeholder="Ej: 6to A" autocomplete="off">
+
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn btn-primary" id="btnComenzar" disabled>Comenzar la simulación →</button>
+      </div>
+      <div class="estado" id="estadoInicio">Completa ambos campos para continuar</div>
+    </div>
+
+    <div class="card">
+      <h2>📘 ¿Qué vas a practicar?</h2>
+      <p class="sub">
+        Este simulador reproduce los conceptos del <b>Material N°21</b>:
+        capas de conectividad física, matriz diagnóstica entre red privada y pública,
+        dispositivos de frontera (routers, firewalls, NAT, IDS/IPS) y la extensión
+        segura mediante túneles VPN con autenticación y encriptación.
+      </p>
+      <ul style="font-size:.85rem;color:var(--muted);padding-left:20px;margin:0;">
+        <li><b>Módulo 1:</b> Matriz Diagnóstica (Red Privada vs. Pública)</li>
+        <li><b>Módulo 2:</b> Arquitectura de Frontera y Firewall (pfSense / NAT)</li>
+        <li><b>Módulo 3:</b> Extensión Segura (Túnel VPN)</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ================= PANTALLA 2: MÓDULO 1 ================= -->
+  <section class="pantalla" id="p-m1">
+    <div class="card">
+      <h2><span class="num">1</span>Matriz Diagnóstica</h2>
+      <p class="sub">
+        Clasifica cada dirección IP o escenario según corresponda.
+        Recuerda los rangos reservados por <b>RFC 1918</b>:
+        10.0.0.0/8 · 172.16.0.0/12 (172.16–172.31) · 192.168.0.0/16.
+      </p>
+      <div id="listaM1"></div>
+      <div class="estado" id="estadoM1">Aciertos: 0 / 8</div>
+    </div>
+
+    <div class="card">
+      <h2>✍️ Reflexión del Módulo 1</h2>
+      <p class="sub">
+        Explica con tus palabras por qué la escuela necesita usar direcciones IP privadas
+        (RFC 1918) en su red interna y en qué momento esas direcciones deben transformarse
+        para poder salir a Internet.
+      </p>
+      <label for="ta1">Tu respuesta (mínimo 20 palabras)</label>
+      <textarea id="ta1" placeholder="Escribe aquí tu reflexión..."></textarea>
+      <div class="contador" id="cont1">Palabras: 0 / 20 mín.</div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-primary" id="btnIrM2" disabled>Continuar al Módulo 2 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PANTALLA 3: MÓDULO 2 ================= -->
+  <section class="pantalla" id="p-m2">
+    <div class="card">
+      <h2><span class="num">2</span>Arquitectura de Frontera y Firewall</h2>
+      <p class="sub">
+        El <b>pfSense</b> es el dispositivo de frontera entre la Red Pública (ISP) y la
+        Red Privada (192.168.10.0/24). Configura el NAT y las reglas de filtrado.
+      </p>
+
+      <h3>Paso 1 · Tabla de Traducción NAT</h3>
+      <p class="sub">
+        El host interno <b>192.168.10.10</b> envía una petición HTTP a un servidor de Internet.
+        ¿Qué dirección de origen verá el servidor de destino después de aplicarse el NAT?
+      </p>
+      <div id="opcionesNAT"></div>
+      <div class="feedback" id="fbNAT"></div>
+    </div>
+
+    <div class="card">
+      <h3>Paso 2 · Reglas Base del Firewall</h3>
+      <p class="sub">
+        <b>Política de seguridad:</b> la subred interna puede navegar por web (HTTPS) hacia
+        Internet. Se bloquea todo acceso entrante desde Internet hacia los servidores internos,
+        <b>excepto</b> SSH (puerto 22) para el administrador. Se bloquea también el Telnet
+        (puerto 23) por viajar sin cifrar.
+      </p>
+      <div id="listaM2"></div>
+      <div class="estado" id="estadoM2">Reglas correctas: 0 / 5</div>
+    </div>
+
+    <div class="card">
+      <h2>✍️ Reflexión del Módulo 2</h2>
+      <p class="sub">
+        ¿Por qué es importante aplicar reglas de filtrado y NAT en el dispositivo de frontera
+        (pfSense) antes de conectar la red privada del laboratorio con Internet?
+        Menciona al menos dos riesgos que se evitan.
+      </p>
+      <label for="ta2">Tu respuesta (mínimo 20 palabras)</label>
+      <textarea id="ta2" placeholder="Escribe aquí tu reflexión..."></textarea>
+      <div class="contador" id="cont2">Palabras: 0 / 20 mín.</div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-ghost" id="btnVolverM1">← Volver al Módulo 1</button>
+        <button class="btn btn-primary" id="btnIrM3" disabled>Continuar al Módulo 3 →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PANTALLA 4: MÓDULO 3 ================= -->
+  <section class="pantalla" id="p-m3">
+    <div class="card">
+      <h2><span class="num">3</span>Extensión Segura · Túnel VPN</h2>
+      <p class="sub">
+        La docente necesita acceder desde su casa al servidor de archivos de la escuela.
+        Configura el túnel VPN eligiendo correctamente el método de autenticación y el
+        algoritmo de encriptación.
+      </p>
+
+      <h3>Paso 1 · Autenticación</h3>
+      <p class="sub">Verificación estricta de identidad antes de conceder acceso a los recursos.</p>
+      <div id="opcionesAuth"></div>
+      <div class="feedback" id="fbAuth"></div>
+
+      <h3>Paso 2 · Encriptación</h3>
+      <p class="sub">Protección absoluta de datos y contraseñas sensibles en tránsito.</p>
+      <div id="opcionesCif"></div>
+      <div class="feedback" id="fbCif"></div>
+
+      <h3>Paso 3 · Establecer el Túnel</h3>
+      <div class="tunel" id="tunel">
+        <div class="paquete">🔐</div>
+        <div class="tunel-msg" id="tunelMsg">Túnel inactivo · tráfico expuesto</div>
+      </div>
+      <button class="btn btn-amber" id="btnTunel" disabled>⚡ Establecer túnel OpenVPN</button>
+      <div class="estado" id="estadoM3">Completa autenticación y encriptación</div>
+    </div>
+
+    <div class="card">
+      <h2>✍️ Reflexión del Módulo 3</h2>
+      <p class="sub">
+        ¿Qué ventajas aporta un túnel VPN con autenticación y cifrado fuerte al docente que se
+        conecta desde su casa a los servidores de la escuela? ¿Qué pasaría si el túnel no
+        estuviera cifrado?
+      </p>
+      <label for="ta3">Tu respuesta (mínimo 20 palabras)</label>
+      <textarea id="ta3" placeholder="Escribe aquí tu reflexión..."></textarea>
+      <div class="contador" id="cont3">Palabras: 0 / 20 mín.</div>
+      <div class="btn-row" style="margin-top:16px;">
+        <button class="btn btn-ghost" id="btnVolverM2">← Volver al Módulo 2</button>
+        <button class="btn btn-primary" id="btnIrCierre" disabled>Ver panel de cierre →</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= PANTALLA 5: CIERRE ================= -->
+  <section class="pantalla" id="p-cierre">
+    <div class="card">
+      <h2>🎓 Panel de Cierre y Reporte</h2>
+      <p class="sub">Revisa el estado de tus actividades antes de generar el informe descargable.</p>
+
+      <ul class="checklist" id="checklist"></ul>
+
+      <div class="aviso" id="avisoCierre">
+        Debes completar todas las actividades y todas las reflexiones (mínimo 20 palabras cada una)
+        para habilitar la descarga.
+      </div>
+
+      <button class="btn btn-ok" id="btnDescargar" disabled style="min-height:60px;font-size:1.05rem;">
+        📄 Generar y Descargar Informe (.doc)
+      </button>
+
+      <div class="btn-row" style="margin-top:12px;">
+        <button class="btn btn-ghost" id="btnVolverM3">← Volver al Módulo 3</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Datos que incluirá el informe</h2>
+      <ul style="font-size:.85rem;color:var(--muted);padding-left:20px;margin:0;">
+        <li>Encabezado institucional</li>
+        <li>Nombre, apellido y curso del alumno</li>
+        <li>Estado de los 3 módulos completados</li>
+        <li>Las 3 reflexiones textuales completas</li>
+        <li>Sello de validación de finalización exitosa</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="pie">Simulador educativo · Material N°21 · Redes Públicas y Privadas</div>
+</div>
+
+<script>
+/* =========================================================
+   ESTADO GLOBAL
+   ========================================================= */
+const state = {
+  alumno: '',
+  curso: '',
+  m1: { resueltos: new Set(), total: 8, completo: false },
+  m2: { natOk: false, reglas: new Map(), completo: false },
+  m3: { authOk: false, cifOk: false, tunelOk: false, completo: false }
+};
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+function contarPalabras(txt){
+  const t = (txt || '').trim();
+  if(!t) return 0;
+  return t.split(/\s+/).filter(w => w.length > 0).length;
+}
+
+function mostrarPantalla(id){
+  document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+  const el = document.getElementById(id);
+  if(el){
+    el.classList.add('activa');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function actualizarChips(){
+  document.getElementById('chip1').classList.toggle('done', state.m1.completo);
+  document.getElementById('chip2').classList.toggle('done', state.m2.completo);
+  document.getElementById('chip3').classList.toggle('done', state.m3.completo);
+}
+
+/* =========================================================
+   PANTALLA DE IDENTIFICACIÓN
+   ========================================================= */
+const inNombre = document.getElementById('inNombre');
+const inCurso  = document.getElementById('inCurso');
+const btnComenzar = document.getElementById('btnComenzar');
+const estadoInicio = document.getElementById('estadoInicio');
+
+function validarIdentificacion(){
+  const n = inNombre.value.trim();
+  const c = inCurso.value.trim();
+  const ok = n.length >= 3 && c.length >= 2;
+  btnComenzar.disabled = !ok;
+  if(ok){
+    estadoInicio.textContent = '✔ Datos registrados. ¡Puedes comenzar!';
+    estadoInicio.classList.add('ok');
+    state.alumno = n;
+    state.curso = c;
+  } else {
+    estadoInicio.textContent = 'Completa ambos campos para continuar';
+    estadoInicio.classList.remove('ok');
+    state.alumno = '';
+    state.curso = '';
+  }
+}
+inNombre.addEventListener('input', validarIdentificacion);
+inCurso.addEventListener('input', validarIdentificacion);
+
+btnComenzar.addEventListener('click', () => {
+  validarIdentificacion();
+  if(btnComenzar.disabled) return;
+  mostrarPantalla('p-m1');
+});
+
+/* =========================================================
+   MÓDULO 1 · MATRIZ DIAGNÓSTICA
+   ========================================================= */
+const itemsM1 = [
+  { id:'i1', tipo:'Dirección IP', texto:'192.168.10.25', correcta:'privada',
+    explic:'Pertenece al rango 192.168.0.0/16, reservado por RFC 1918.' },
+  { id:'i2', tipo:'Dirección IP', texto:'203.0.113.45', correcta:'publica',
+    explic:'No pertenece a ningún rango RFC 1918: es enrutable globalmente.' },
+  { id:'i3', tipo:'Dirección IP', texto:'10.0.5.14', correcta:'privada',
+    explic:'Pertenece al rango 10.0.0.0/8, reservado por RFC 1918.' },
+  { id:'i4', tipo:'Dirección IP', texto:'172.16.20.8', correcta:'privada',
+    explic:'Pertenece al rango 172.16.0.0/12 (172.16 a 172.31), reservado por RFC 1918.' },
+  { id:'i5', tipo:'Dirección IP', texto:'8.8.8.8', correcta:'publica',
+    explic:'Servidor DNS público de Google, enrutable en Internet.' },
+  { id:'i6', tipo:'Dirección IP', texto:'172.32.5.1', correcta:'publica',
+    explic:'¡Cuidado! 172.32 está FUERA del rango privado 172.16–172.31, por lo que es pública.' },
+  { id:'i7', tipo:'Escenario', texto:'Laboratorio de la escuela al que solo acceden las PCs del aula, sin salida a Internet.', correcta:'privada',
+    explic:'Acceso restringido a usuarios autorizados internamente = Red Privada.' },
+  { id:'i8', tipo:'Escenario', texto:'Sitio web de la escuela que las familias consultan desde sus casas.', correcta:'publica',
+    explic:'Red de telecomunicaciones abierta al uso general = Red Pública.' }
+];
+
+const listaM1 = document.getElementById('listaM1');
+const estadoM1 = document.getElementById('estadoM1');
+
+itemsM1.forEach(it => {
+  const card = document.createElement('div');
+  card.className = 'item';
+  card.id = 'card-' + it.id;
+  card.innerHTML =
+    '<div class="item-tipo">' + it.tipo + '</div>' +
+    '<div class="item-txt">' + it.texto + '</div>' +
+    '<div class="btn-row">' +
+      '<button class="btn" data-item="' + it.id + '" data-val="privada">🔒 Red Privada</button>' +
+      '<button class="btn" data-item="' + it.id + '" data-val="publica">🌐 Red Pública</button>' +
+    '</div>' +
+    '<div class="feedback" id="fb-' + it.id + '"></div>';
+  listaM1.appendChild(card);
+});
+
+listaM1.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-item]');
+  if(!btn) return;
+  const id = btn.dataset.item;
+  const val = btn.dataset.val;
+  if(state.m1.resueltos.has(id)) return;
+
+  const item = itemsM1.find(i => i.id === id);
+  const card = document.getElementById('card-' + id);
+  const fb = document.getElementById('fb-' + id);
+
+  if(val === item.correcta){
+    state.m1.resueltos.add(id);
+    card.classList.add('ok');
+    card.querySelectorAll('button').forEach(b => b.disabled = true);
+    fb.textContent = '✔ Correcto. ' + item.explic;
+    fb.className = 'feedback ok-txt show';
+  } else {
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 420);
+    fb.textContent = '✘ Incorrecto. Vuelve a intentarlo.';
+    fb.className = 'feedback err-txt show';
+  }
+  actualizarM1();
+});
+
+function actualizarM1(){
+  const n = state.m1.resueltos.size;
+  estadoM1.textContent = 'Aciertos: ' + n + ' / ' + state.m1.total;
+  if(n === state.m1.total){
+    state.m1.completo = true;
+    estadoM1.textContent = '✔ Módulo 1 · Ejercicio completado correctamente (8 / 8)';
+    estadoM1.classList.add('ok');
+  }
+  actualizarChips();
+  refrescarBotones();
+}
+
+/* =========================================================
+   CONTADORES DE PALABRAS + REFLEXIONES
+   ========================================================= */
+const reflexiones = [
+  { ta:'ta1', cont:'cont1', key:'r1' },
+  { ta:'ta2', cont:'cont2', key:'r2' },
+  { ta:'ta3', cont:'cont3', key:'r3' }
+];
+const textos = { r1:'', r2:'', r3:'' };
+
+reflexiones.forEach(r => {
+  const ta = document.getElementById(r.ta);
+  const cont = document.getElementById(r.cont);
+  ta.addEventListener('input', () => {
+    textos[r.key] = ta.value;
+    actualizarContador(ta, cont);
+    refrescarBotones();
+  });
+  actualizarContador(ta, cont);
+});
+
+function actualizarContador(ta, cont){
+  const n = contarPalabras(ta.value);
+  cont.textContent = 'Palabras: ' + n + ' / 20 mín.';
+  cont.classList.remove('ok','bad');
+  if(n >= 20){
+    cont.classList.add('ok');
+    cont.textContent = '✔ ' + cont.textContent + ' — Cumple el mínimo';
+  } else if(ta.value.trim().length > 0){
+    cont.classList.add('bad');
+    cont.textContent = cont.textContent + ' — Faltan ' + (20 - n);
+  }
+}
+
+function reflexionValida(key){
+  return contarPalabras(textos[key]) >= 20;
+}
+
+/* =========================================================
+   MÓDULO 2 · NAT + REGLAS DE FIREWALL
+   ========================================================= */
+const opcionesNAT = [
+  { id:'n1', texto:'192.168.10.10 (la dirección privada original)', ok:false,
+    explic:'Las direcciones RFC 1918 no se enrutan en Internet; si salieran así, el retorno sería imposible.' },
+  { id:'n2', texto:'203.0.113.5 (la dirección pública del pfSense)', ok:true,
+    explic:'Correcto: el NAT traduce la IP privada de origen por la IP pública de la interfaz WAN.' },
+  { id:'n3', texto:'127.0.0.1 (loopback)', ok:false,
+    explic:'127.0.0.1 es la dirección de loopback local, nunca sale a Internet.' },
+  { id:'n4', texto:'255.255.255.0 (máscara de subred)', ok:false,
+    explic:'Esa es una máscara de subred, no una dirección de origen válida.' }
+];
+
+const contNAT = document.getElementById('opcionesNAT');
+const fbNAT = document.getElementById('fbNAT');
+
+opcionesNAT.forEach(op => {
+  const b = document.createElement('button');
+  b.className = 'btn btn-ghost';
+  b.style.marginBottom = '8px';
+  b.style.justifyContent = 'flex-start';
+  b.style.textAlign = 'left';
+  b.dataset.nat = op.id;
+  b.textContent = op.texto;
+  contNAT.appendChild(b);
+});
+
+contNAT.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-nat]');
+  if(!btn || state.m2.natOk) return;
+  const op = opcionesNAT.find(o => o.id === btn.dataset.nat);
+  if(op.ok){
+    state.m2.natOk = true;
+    btn.style.borderColor = 'var(--ok)';
+    btn.style.background = 'rgba(34,197,94,.15)';
+    fbNAT.textContent = '✔ ' + op.explic;
+    fbNAT.className = 'feedback ok-txt show';
+    contNAT.querySelectorAll('button').forEach(b => b.disabled = true);
+  } else {
+    fbNAT.textContent = '✘ ' + op.explic;
+    fbNAT.className = 'feedback err-txt show';
+  }
+  actualizarM2();
+});
+
+const reglasM2 = [
+  { id:'r1', texto:'Salida LAN → WAN, puerto 443 (HTTPS) desde los laboratorios', correcta:'permitir' },
+  { id:'r2', texto:'Entrada WAN → LAN, cualquier puerto hacia los servidores internos', correcta:'bloquear' },
+  { id:'r3', texto:'Entrada WAN → LAN, puerto 22 (SSH) hacia el servidor de administración', correcta:'permitir' },
+  { id:'r4', texto:'Salida LAN → WAN, puerto 23 (Telnet, sin cifrar)', correcta:'bloquear' },
+  { id:'r5', texto:'Entrada WAN → LAN, puerto 3389 (RDP) hacia las PCs del laboratorio', correcta:'bloquear' }
+];
+
+const listaM2 = document.getElementById('listaM2');
+const estadoM2 = document.getElementById('estadoM2');
+
+reglasM2.forEach(r => {
+  const card = document.createElement('div');
+  card.className = 'item';
+  card.id = 'rcard-' + r.id;
+  card.innerHTML =
+    '<div class="item-txt">' + r.texto + '</div>' +
+    '<div class="btn-row">' +
+      '<button class="btn" data-regla="' + r.id + '" data-val="permitir">✅ Permitir</button>' +
+      '<button class="btn" data-regla="' + r.id + '" data-val="bloquear">⛔ Bloquear</button>' +
+    '</div>' +
+    '<div class="feedback" id="rfb-' + r.id + '"></div>';
+  listaM2.appendChild(card);
+});
+
+listaM2.addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-regla]');
+  if(!btn) return;
+  const id = btn.dataset.regla;
+  const val = btn.dataset.val;
+  if(state.m2.reglas.get(id) === true) return;
+
+  const regla = reglasM2.find(r => r.id === id);
+  const card = document.getElementById('rcard-' + id);
+  const fb = document.getElementById('rfb-' + id);
+
+  if(val === regla.correcta){
+    state.m2.reglas.set(id, true);
+    card.classList.add('ok');
+    card.querySelectorAll('button').forEach(b => b.disabled = true);
+    fb.textContent = '✔ Regla correcta según la política de seguridad.';
+    fb.className = 'feedback ok-txt show';
+  } else {
+    state.m2.reglas.set(id, false);
+    card.classList.add('shake');
+    setTimeout(() => card.classList.remove('shake'), 420);
+    fb.textContent = '✘ Esa acción no cumple la política de seguridad definida.';
+    fb.className = 'feedback err-txt show';
+  }
+  actualizarM2();
+});
+
+function contarReglasOk(){
+  let n = 0;
+  state.m2.reglas.forEach(v => { if(v === true) n++; });
+  return n;
+}
+
+function actualizarM2(){
+  const n = contarReglasOk();
+  estadoM2.textContent = 'Reglas correctas: ' + n + ' / 5';
+  if(state.m2.natOk && n === 5){
+    state.m2.completo = true;
+    estadoM2.textContent = '✔ Módulo 2 · NAT configurado y 5/5 reglas correctas';
+    estadoM2.classList.add('ok');
+  }
+  actualizarChips();
+  refrescarBotones();
+}
+
+/* =========================================================
+   MÓDULO 3 · TÚNEL VPN
+   ========================================================= */
+const opcionesAuth = [
+  { id:'a1', texto:'Acceso anónimo sin contraseña', ok:false,
+    explic:'Sin autenticación cualquiera podría entrar a los servidores de la escuela.' },
+  { id:'a2', texto:'Usuario + contraseña y certificado digital', ok:true,
+    explic:'Correcto: doble factor y certificado verifican estrictamente la identidad.' },
+  { id:'a3', texto:'Confiar solamente en la dirección IP de origen', ok:false,
+    explic:'Las IP pueden falsificarse o cambiar; no es un método de autenticación seguro.' }
+];
+
+const opcionesCif = [
+  { id:'c1', texto:'Sin cifrado (texto plano)', ok:false,
+    explic:'El tráfico viajaría legible y podría ser interceptado en la red pública.' },
+  { id:'c2', texto:'AES-256', ok:true,
+    explic:'Correcto: AES-256 es un algoritmo de cifrado simétrico fuerte, estándar en VPN.' },
+  { id:'c3', texto:'Codificación Base64', ok:false,
+    explic:'Base64 no cifra: solo codifica y cualquiera puede revertirlo fácilmente.' }
+];
+
+function renderOpciones(contenedorId, opciones, tipo, fbId){
+  const cont = document.getElementById(contenedorId);
+  const fb = document.getElementById(fbId);
+  opciones.forEach(op => {
+    const b = document.createElement('button');
+    b.className = 'btn btn-ghost';
+    b.style.marginBottom = '8px';
+    b.style.justifyContent = 'flex-start';
+    b.style.textAlign = 'left';
+    b.dataset.tipo = tipo;
+    b.dataset.op = op.id;
+    b.textContent = op.texto;
+    cont.appendChild(b);
+  });
+  cont.addEventListener('click', (e) => {
+    const btn = e.target.closest('button[data-op]');
+    if(!btn) return;
+    const yaOk = (tipo === 'auth') ? state.m3.authOk : state.m3.cifOk;
+    if(yaOk) return;
+    const op = opciones.find(o => o.id === btn.dataset.op);
+    if(op.ok){
+      if(tipo === 'auth') state.m3.authOk = true; else state.m3.cifOk = true;
+      btn.style.borderColor = 'var(--ok)';
+      btn.style.background = 'rgba(34,197,94,.15)';
+      fb.textContent = '✔ ' + op.explic;
+      fb.className = 'feedback ok-txt show';
+      cont.querySelectorAll('button').forEach(b => b.disabled = true);
+    } else {
+      fb.textContent = '✘ ' + op.explic;
+      fb.className = 'feedback err-txt show';
+    }
+    actualizarM3();
+  });
+}
+
+renderOpciones('opcionesAuth', opcionesAuth, 'auth', 'fbAuth');
+renderOpciones('opcionesCif', opcionesCif, 'cif', 'fbCif');
+
+const btnTunel = document.getElementById('btnTunel');
+const tunel = document.getElementById('tunel');
+const tunelMsg = document.getElementById('tunelMsg');
+const estadoM3 = document.getElementById('estadoM3');
+
+btnTunel.addEventListener('click', () => {
+  if(btnTunel.disabled) return;
+  state.m3.tunelOk = true;
+  tunel.classList.add('activo');
+  tunelMsg.textContent = 'Túnel cifrado activo · AES-256 · IP asignada al docente: 10.8.0.2';
+  tunelMsg.style.color = '#7ee2a8';
+  btnTunel.disabled = true;
+  btnTunel.textContent = '🔒 Túnel OpenVPN establecido';
+  actualizarM3();
+});
+
+function actualizarM3(){
+  btnTunel.disabled = !(state.m3.authOk && state.m3.cifOk) || state.m3.tunelOk;
+  if(state.m3.authOk && state.m3.cifOk && state.m3.tunelOk){
+    state.m3.completo = true;
+    estadoM3.textContent = '✔ Módulo 3 · Autenticación, encriptación y túnel establecidos';
+    estadoM3.classList.add('ok');
+  } else if(state.m3.authOk && state.m3.cifOk){
+    estadoM3.textContent = 'Paso 3 pendiente: establece el túnel OpenVPN';
+    estadoM3.classList.remove('ok');
+  } else {
+    estadoM3.textContent = 'Completa autenticación y encriptación';
+    estadoM3.classList.remove('ok');
+  }
+  actualizarChips();
+  refrescarBotones();
+}
+
+/* =========================================================
+   HABILITACIÓN DE BOTONES DE NAVEGACIÓN
+   ========================================================= */
+const btnIrM2 = document.getElementById('btnIrM2');
+const btnIrM3 = document.getElementById('btnIrM3');
+const btnIrCierre = document.getElementById('btnIrCierre');
+
+function refrescarBotones(){
+  btnIrM2.disabled = !(state.m1.completo && reflexionValida('r1'));
+  btnIrM3.disabled = !(state.m2.completo && reflexionValida('r2'));
+  btnIrCierre.disabled = !(state.m3.completo && reflexionValida('r3'));
+  actualizarChecklist();
+  actualizarBotonDescarga();
+}
+
+btnIrM2.addEventListener('click', () => { if(!btnIrM2.disabled) mostrarPantalla('p-m2'); });
+btnIrM3.addEventListener('click', () => { if(!btnIrM3.disabled) mostrarPantalla('p-m3'); });
+btnIrCierre.addEventListener('click', () => { if(!btnIrCierre.disabled) mostrarPantalla('p-cierre'); });
+
+document.getElementById('btnVolverM1').addEventListener('click', () => mostrarPantalla('p-m1'));
+document.getElementById('btnVolverM2').addEventListener('click', () => mostrarPantalla('p-m2'));
+document.getElementById('btnVolverM3').addEventListener('click', () => mostrarPantalla('p-m3'));
+
+/* =========================================================
+   CHECKLIST DEL CIERRE
+   ========================================================= */
+function actualizarChecklist(){
+  const cl = document.getElementById('checklist');
+  if(!cl) return;
+  const datos = state.alumno.length >= 3 && state.curso.length >= 2;
+  const filas = [
+    { ok: datos, txt: 'Datos del alumno registrados (' + (state.alumno || 'sin nombre') + ' · ' + (state.curso || 'sin curso') + ')' },
+    { ok: state.m1.completo, txt: 'Módulo 1 · Matriz Diagnóstica: ejercicio 8/8 correcto' },
+    { ok: reflexionValida('r1'), txt: 'Módulo 1 · Reflexión con mínimo 20 palabras (' + contarPalabras(textos.r1) + ')' },
+    { ok: state.m2.completo, txt: 'Módulo 2 · NAT + 5 reglas de firewall correctas' },
+    { ok: reflexionValida('r2'), txt: 'Módulo 2 · Reflexión con mínimo 20 palabras (' + contarPalabras(textos.r2) + ')' },
+    { ok: state.m3.completo, txt: 'Módulo 3 · Autenticación, cifrado y túnel VPN establecidos' },
+    { ok: reflexionValida('r3'), txt: 'Módulo 3 · Reflexión con mínimo 20 palabras (' + contarPalabras(textos.r3) + ')' }
+  ];
+  cl.innerHTML = '';
+  filas.forEach(f => {
+    const li = document.createElement('li');
+    if(f.ok) li.classList.add('ok');
+    li.innerHTML = (f.ok ? '✔' : '○') + ' <span>' + f.txt + '</span>';
+    cl.appendChild(li);
+  });
+}
+
+/* =========================================================
+   BOTÓN DE DESCARGA
+   ========================================================= */
+const btnDescargar = document.getElementById('btnDescargar');
+const avisoCierre = document.getElementById('avisoCierre');
+
+function todoCompleto(){
+  return state.alumno.trim().length >= 3 &&
+         state.curso.trim().length >= 2 &&
+         state.m1.completo &&
+         state.m2.completo &&
+         state.m3.completo &&
+         reflexionValida('r1') &&
+         reflexionValida('r2') &&
+         reflexionValida('r3');
+}
+
+function actualizarBotonDescarga(){
+  const ok = todoCompleto();
+  btnDescargar.disabled = !ok;
+  if(ok){
+    avisoCierre.textContent = '✔ Todo listo. Ya puedes generar y descargar tu informe en formato .doc';
+    avisoCierre.style.background = 'rgba(34,197,94,.12)';
+    avisoCierre.style.borderColor = 'var(--ok)';
+    avisoCierre.style.color = '#7ee2a8';
+  } else {
+    avisoCierre.textContent = 'Debes completar todas las actividades y todas las reflexiones (mínimo 20 palabras cada una) para habilitar la descarga.';
+    avisoCierre.style.background = 'rgba(245,165,36,.12)';
+    avisoCierre.style.borderColor = 'var(--accent2)';
+    avisoCierre.style.color = '#ffd89b';
+  }
+}
+
+/* =========================================================
+   GENERACIÓN DEL INFORME .DOC
+   ========================================================= */
+function escaparHTML(t){
+  return String(t)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fechaLegible(){
+  const d = new Date();
+  const p = n => (n < 10 ? '0' + n : '' + n);
+  return p(d.getDate()) + '/' + p(d.getMonth() + 1) + '/' + d.getFullYear() +
+         ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+function construirInforme(){
+  const fecha = fechaLegible();
+  const n1 = contarPalabras(textos.r1);
+  const n2 = contarPalabras(textos.r2);
+  const n3 = contarPalabras(textos.r3);
+
+  const filaModulo = (titulo, estado, detalle, palabras, reflexion) =>
+    '<h2 style="color:#1a4b7a;border-bottom:2px solid #1a4b7a;padding-bottom:4px;font-size:14pt;">' + titulo + '</h2>' +
+    '<p style="margin:6px 0;"><b>Estado del ejercicio:</b> ' + estado + '</p>' +
+    '<p style="margin:6px 0;"><b>Detalle:</b> ' + detalle + '</p>' +
+    '<p style="margin:6px 0;"><b>Reflexión entregada:</b> CUMPLE (' + palabras + ' palabras — mínimo requerido: 20)</p>' +
+    '<p style="margin:6px 0 0 0;"><b>Respuesta textual del alumno:</b></p>' +
+    '<div style="border:1px solid #999;background:#f6f9fc;padding:10px;margin-top:4px;font-style:italic;">' +
+      escaparHTML(reflexion).replace(/\n/g, '<br>') +
+    '</div>';
+
+  return '' +
+  '<html xmlns:o="urn:schemas-microsoft-com:office:office" ' +
+        'xmlns:w="urn:schemas-microsoft-com:office:word" ' +
+        'xmlns="http://www.w3.org/TR/REC-html40">' +
+  '<head><meta charset="utf-8">' +
+  '<title>Informe de Redes</title>' +
+  '<style>' +
+    '@page{size:A4;margin:2cm;}' +
+    'body{font-family:Calibri,Arial,sans-serif;font-size:11pt;color:#111;line-height:1.45;}' +
+    'h1{font-size:16pt;color:#0b3c66;margin:0 0 4px 0;text-align:center;}' +
+    'h2{font-size:13pt;color:#1a4b7a;margin:18px 0 6px 0;}' +
+    '.inst{text-align:center;font-size:10pt;color:#444;margin:0 0 14px 0;}' +
+    '.caja{border:1px solid #bbb;background:#eef4fa;padding:10px;margin-bottom:12px;}' +
+    '.sello{border:3px double #15803d;color:#15803d;text-align:center;font-weight:bold;' +
+           'padding:14px;margin-top:22px;font-size:13pt;letter-spacing:1px;}' +
+    'table{border-collapse:collapse;width:100%;margin:8px 0;}' +
+    'td,th{border:1px solid #999;padding:6px;font-size:10.5pt;text-align:left;}' +
+    'th{background:#dbe9f5;}' +
+  '</style></head><body>' +
+
+  '<h1>ESCUELA TÉCNICA</h1>' +
+  '<p class="inst">Materia: <b>Redes</b> · <b>6to Año</b><br>' +
+  'Informe de Actividades — Material N°21<br>' +
+  '<i>Redes Públicas y Privadas: Dispositivos de Frontera y Túneles VPN</i></p>' +
+
+  '<div class="caja">' +
+    '<p style="margin:3px 0;"><b>Nombre y Apellido del Alumno:</b> ' + escaparHTML(state.alumno) + '</p>' +
+    '<p style="margin:3px 0;"><b>Curso / División:</b> ' + escaparHTML(state.curso) + '</p>' +
+    '<p style="margin:3px 0;"><b>Fecha de finalización:</b> ' + fecha + '</p>' +
+  '</div>' +
+
+  '<h2>Registro de Módulos Completados</h2>' +
+  '<table>' +
+    '<tr><th>Módulo</th><th>Actividad</th><th>Estado</th></tr>' +
+    '<tr><td>Módulo 1</td><td>Matriz Diagnóstica: Red Privada vs. Red Pública</td><td>COMPLETADO (8/8 aciertos)</td></tr>' +
+    '<tr><td>Módulo 2</td><td>Arquitectura de Frontera y Firewall (pfSense / NAT)</td><td>COMPLETADO (NAT + 5/5 reglas)</td></tr>' +
+    '<tr><td>Módulo 3</td><td>Extensión Segura: Túnel VPN (Autenticación y Encriptación)</td><td>COMPLETADO</td></tr>' +
+  '</table>' +
+
+  filaModulo('Módulo 1 · Matriz Diagnóstica (Red Privada vs. Red Pública)',
+             'COMPLETADO CORRECTAMENTE',
+             'Clasificación de direcciones IP y escenarios: 8 de 8 respuestas correctas. ' +
+             'Se aplicaron los rangos RFC 1918 (10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16).',
+             n1, textos.r1) +
+
+  filaModulo('Módulo 2 · Arquitectura de Frontera y Firewall (pfSense / NAT)',
+             'COMPLETADO CORRECTAMENTE',
+             'Configuración de la traducción de direcciones NAT y de 5 reglas de filtrado en el ' +
+             'dispositivo de frontera, protegiendo la subred interna 192.168.10.0/24.',
+             n2, textos.r2) +
+
+  filaModulo('Módulo 3 · Extensión Segura (Túnel VPN)',
+             'COMPLETADO CORRECTAMENTE',
+             'Selección de autenticación mediante usuario, contraseña y certificado digital, y de ' +
+             'encriptación AES-256. Túnel OpenVPN establecido con IP asignada 10.8.0.2.',
+             n3, textos.r3) +
+
+  '<h2>Validación de Actividades</h2>' +
+  '<table>' +
+    '<tr><th>Requisito</th><th>Resultado</th></tr>' +
+    '<tr><td>Ejercicio práctico Módulo 1 (8/8)</td><td>CUMPLIDO</td></tr>' +
+    '<tr><td>Ejercicio práctico Módulo 2 (NAT + 5 reglas)</td><td>CUMPLIDO</td></tr>' +
+    '<tr><td>Ejercicio práctico Módulo 3 (VPN completa)</td><td>CUMPLIDO</td></tr>' +
+    '<tr><td>Reflexión Módulo 1 (mínimo 20 palabras)</td><td>CUMPLIDO — ' + n1 + ' palabras</td></tr>' +
+    '<tr><td>Reflexión Módulo 2 (mínimo 20 palabras)</td><td>CUMPLIDO — ' + n2 + ' palabras</td></tr>' +
+    '<tr><td>Reflexión Módulo 3 (mínimo 20 palabras)</td><td>CUMPLIDO — ' + n3 + ' palabras</td></tr>' +
+  '</table>' +
+
+  '<div class="sello">✔ SELLO DE VALIDACIÓN<br>ACTIVIDAD FINALIZADA CORRECTAMENTE<br>' +
+  '<span style="font-size:10pt;font-weight:normal;">' + escaparHTML(state.alumno) + ' · ' +
+  escaparHTML(state.curso) + ' · ' + fecha + '</span></div>' +
+
+  '<p style="margin-top:20px;font-size:9pt;color:#666;text-align:center;">' +
+  'Documento generado automáticamente por el Simulador de Redes — Material N°21.</p>' +
+
+  '</body></html>';
+}
+
+btnDescargar.addEventListener('click', () => {
+  if(btnDescargar.disabled) return;
+
+  const contenido = construirInforme();
+  const nombreLimpio = state.alumno.trim().replace(/\s+/g, '_').replace(/[^\w\-]/g, '');
+  const nombreArchivo = 'Informe_Redes_' + (nombreLimpio || 'Alumno') + '.doc';
+
+  try{
+    const blob = new Blob(['\ufeff', contenido], { type: 'application/msword;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombreArchivo;
+    a.style.display = 'none';
+    document.body.appendChild(a);
+    a.click();
+
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1500);
+
+    btnDescargar.textContent = '✔ Informe generado: ' + nombreArchivo;
+    setTimeout(() => {
+      btnDescargar.textContent = '📄 Generar y Descargar Informe (.doc)';
+    }, 4000);
+
+  } catch(err){
+    alert('No se pudo generar el archivo. Intenta nuevamente desde Chrome en tu celular.');
+  }
+});
+
+/* =========================================================
+   INICIALIZACIÓN
+   ========================================================= */
+(function init(){
+  actualizarM1();
+  actualizarM2();
+  actualizarM3();
+  actualizarChecklist();
+  actualizarBotonDescarga();
+  validarIdentificacion();
+})();
+</script>
+</body>
+</html>
